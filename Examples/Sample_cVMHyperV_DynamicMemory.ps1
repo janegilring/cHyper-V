@@ -45,3 +45,4 @@ configuration Sample_cVMHyperV_DynamicMemory
         }
     }
 }
+

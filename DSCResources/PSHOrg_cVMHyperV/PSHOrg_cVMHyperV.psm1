@@ -462,3 +462,4 @@ function Get-VMIPAddress
 
 Export-ModuleMember -Function *-TargetResource
 
+

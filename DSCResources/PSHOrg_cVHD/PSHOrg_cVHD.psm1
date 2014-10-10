@@ -271,3 +271,4 @@ function GetNameWithExtension
 
 Export-ModuleMember -Function *-TargetResource
 
+

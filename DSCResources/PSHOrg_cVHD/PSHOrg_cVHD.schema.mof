@@ -13,3 +13,4 @@ class PSHOrg_cVHD : OMI_BaseResource
 	[Read, Description("Is the VHD attached to a VM or not")] Boolean IsAttached;
 };
 
+
