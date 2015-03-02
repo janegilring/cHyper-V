@@ -28,6 +28,8 @@ function Get-TargetResource
 		VirtualDiskPath = [System.String]$vmHostObj.VirtualHardDiskPath
 		VirtualMachinePath = [System.String]$vmHostObj.VirtualMachinePath
 		VirtualMachineMigration = [System.String]$vmHostObj.VirtualMachineMigrationEnabled
+        MaximumStorageMigrations = [Int32]$vmHostObj.MaximumStorageMigrations
+        MaximumVirtualMachineMigrations = [Int32]$vmHostObj.MaximumVirtualMachineMigrations
 		EnhancedSessionMode = [System.String]$vmHostObj.EnableEnhancedSessionMode
 		HyperVPowerShell = [System.Boolean]$poshHv
 	}
@@ -54,6 +56,12 @@ function Set-TargetResource
 
 		[System.String]
 		$VirtualMachinePath,
+
+		[Uint32]
+		$MaximumStorageMigrations,
+
+		[Uint32]
+		$MaximumVirtualMachineMigrations,
 
 		[ValidateSet("True","False","","0","1")]
 		[System.String]
@@ -92,9 +100,9 @@ function Set-TargetResource
             $vmHostObj = Get-VMHost $VMHost -ErrorAction SilentlyContinue
 
             if ($VirtualDiskPath) {
-                Write-Verbose -Message "Checking if $VirtualDiskPath matches the current configuration ..."
+                Write-Verbose -Message "Checking if VirtualDiskPath $VirtualDiskPath matches the current configuration ..."
                 if ($vmHostObj.VirtualHardDiskPath -eq $VirtualDiskPath){
-                    Write-Verbose -Message "$VirtualDiskPath is correctly set as the default virtual disk path"
+                    Write-Verbose -Message "VirtualDiskPath $VirtualDiskPath is correctly set as the default virtual disk path"
                 }
                 else {
 
@@ -132,7 +140,7 @@ function Set-TargetResource
 
             if ($VirtualMachinePath) {
             
-                Write-Verbose -Message "Checking if $VirtualMachinePath matches the current configuration ..."
+                Write-Verbose -Message "Checking if VirtualMachinePath $VirtualMachinePath matches the current configuration ..."
             
                 if ($vmHostObj.VirtualMachinePath -eq $VirtualMachinePath){
                     Write-Verbose -Message "$VirtualMachinePath is correctly set as the default virtual machine path"
@@ -164,6 +172,28 @@ function Set-TargetResource
                     else{
                         Throw "The path is not valid to store virtual machine configurations"
                     }
+                }
+            }
+
+            if ($MaximumStorageMigrations) {
+                Write-Verbose -Message "Checking if MaximumStorageMigrations value is set to $MaximumStorageMigrations ..."
+                if ($vmHostObj.MaximumStorageMigrations -eq $MaximumStorageMigrations){
+                    Write-Verbose -Message "MaximumStorageMigrations value is correctly set to $MaximumStorageMigrations"
+                }
+                else {
+                    Write-Verbose -Message "Configuring MaximumStorageMigrations ..."
+                    Set-VMHost -MaximumStorageMigrations $MaximumStorageMigrations
+                }
+            }
+
+            if ($MaximumVirtualMachineMigrations) {
+                Write-Verbose -Message "Checking if MaximumVirtualMachineMigrations value is set to $MaximumVirtualMachineMigrations ..."
+                if ($vmHostObj.MaximumVirtualMachineMigrations -eq $MaximumVirtualMachineMigrations){
+                    Write-Verbose -Message "MaximumVirtualMachineMigrations value is correctly set to $MaximumVirtualMachineMigrations"
+                }
+                else {
+                    Write-Verbose -Message "Configuring MaximumVirtualMachineMigrations ..."
+                    Set-VMHost -MaximumVirtualMachineMigrations $MaximumVirtualMachineMigrations
                 }
             }
 
@@ -253,6 +283,12 @@ function Test-TargetResource
 		[System.String]
 		$VirtualMachinePath,
 
+		[Uint32]
+		$MaximumStorageMigrations,
+
+		[Uint32]
+		$MaximumVirtualMachineMigrations,
+
 		[ValidateSet("True","False","","0","1")]
 		[System.String]
 		$VirtualMachineMigration = 2,
@@ -261,6 +297,8 @@ function Test-TargetResource
 		[System.String]
 		$EnhancedSessionMode = 2
 	)
+
+$Valid = $true
 
     if($Ensure -eq 'Present') {
 
@@ -273,38 +311,65 @@ function Test-TargetResource
             }
             else {
                 Write-Verbose -Message "The Hyper-V PowerShell module is missing. Hyper-V is not properly installed."
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
         else{
             Write-Verbose -Message "The Hyper-V Role is not installed"
-            Return $false
+            $Valid = $Valid -and $false
         }
 
         $vmHostObj = Get-VMHost $VMHost -ErrorAction SilentlyContinue
 
         if ($VirtualDiskPath) {
-            Write-Verbose -Message "Checking if $VirtualDiskPath matches the configuration ..."
+            Write-Verbose -Message "Checking if VirtualDiskPath $VirtualDiskPath matches the configuration ..."
             if ($vmHostObj.VirtualHardDiskPath -eq $VirtualDiskPath){
                 Write-Verbose -Message "$VirtualDiskPath is correctly set as the default virtual disk path"
-                Return $true
+                Write-Verbose -Message "Checking MaximumStorageMigrations"
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "$VirtualDiskPath does not match the current setting of $vmHostObj.VirtualHardDiskPath."
-                Return $false
+                $Valid = $Valid -and $false
+            }
+        }
+
+        
+
+        if ($MaximumStorageMigrations) {
+            Write-Verbose -Message "Checking if MaximumStorageMigrations value $MaximumStorageMigrations matches the configuration ..."
+            if ($vmHostObj.MaximumStorageMigrations -eq $MaximumStorageMigrations){
+                Write-Verbose -Message "MaximumStorageMigrations value $MaximumStorageMigrations is correctly set"
+                $Valid = $Valid -and $true
+            }
+            else {
+                Write-Verbose -Message "MaximumStorageMigrations value $MaximumStorageMigrations does not match the current setting of $vmHostObj.MaximumStorageMigrations."
+                $Valid = $Valid -and $false
+            }
+        }
+
+        if ($MaximumVirtualMachineMigrations) {
+            Write-Verbose -Message "Checking if MaximumVirtualMachineMigrations value $MaximumVirtualMachineMigrations matches the configuration ..."
+            if ($vmHostObj.MaximumVirtualMachineMigrations -eq $MaximumVirtualMachineMigrations){
+                Write-Verbose -Message "MaximumVirtualMachineMigrations value $MaximumVirtualMachineMigrations is correctly set"
+                $Valid = $Valid -and $true
+            }
+            else {
+                Write-Verbose -Message "MaximumVirtualMachineMigrations value $MaximumVirtualMachineMigrations does not match the current setting of $vmHostObj.MaximumVirtualMachineMigrations."
+                $Valid = $Valid -and $false
             }
         }
 
 
         if ($VirtualMachinePath) {
-            Write-Verbose -Message "Checking if $VirtualMachinePath matches the configuration ..."
+            Write-Verbose -Message "Checking if VirtualMachinePath $VirtualMachinePath matches the configuration ..."
             if ($vmHostObj.VirtualMachinePath -eq $VirtualMachinePath){
                 Write-Verbose -Message "$VirtualMachinePath is correctly set as the default virtual machine path"
-                Return $true
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "$VirtualMachinePath is not set as the default virtual machine path"
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
 
@@ -312,21 +377,21 @@ function Test-TargetResource
             Write-Verbose -Message "Checking if virtual machine migration is set to True ..."
             if ($vmHostObj.VirtualMachineMigrationEnabled -eq $true){
                 Write-Verbose -Message "Virtual machine migration is correctly set to $VirtualMachineMigration"
-                Return $true
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "Virtual machine migration is not set to $VirtualMachineMigration"
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
         elseif ($VirtualMachineMigration -eq $false) {
             if ($vmHostObj.VirtualMachineMigrationEnabled -eq $false){
                 Write-Verbose -Message "Virtual machine migration is correctly set to $VirtualMachineMigration"
-                Return $true
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "Virtual machine migration is not set to $VirtualMachineMigration"
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
 
@@ -334,21 +399,21 @@ function Test-TargetResource
             Write-Verbose -Message "Checking if virtual machine migration is set to True ..."
             if ($vmHostObj.EnableEnhancedSessionMode -eq $true){
                 Write-Verbose -Message "Enhanced session mode is correctly set to $EnhancedSessionMode"
-                Return $true
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "Enhanced session mode is not set to $EnhancedSessionMode"
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
         elseif ($EnhancedSessionMode -eq $false) {
             if ($vmHostObj.EnableEnhancedSessionMode -eq $false){
                 Write-Verbose -Message "Enhanced session mode is correctly set to $EnhancedSessionMode"
-                Return $true
+                $Valid = $Valid -and $true
             }
             else {
                 Write-Verbose -Message "Enhanced session mode is not set to $EnhancedSessionMode"
-                Return $false
+                $Valid = $Valid -and $false
             }
         }
     }
@@ -357,13 +422,16 @@ function Test-TargetResource
         Write-Verbose -Message "Checking if Hyper-V is not enabled ..."
         if ((Get-WindowsFeature -Name Hyper-V)){
             Write-Verbose -Message "The Hyper-V Role is present."
-            Return $false
+            $Valid = $Valid -and $false
         }
         else{
             Write-Verbose -Message "The Hyper-V Role is not installed"
-            Return $true
+            $Valid = $Valid -and $true
         }
     }
+
+    return $valid
+
 }
 
 Export-ModuleMember -Function *-TargetResource
